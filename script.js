@@ -28,21 +28,51 @@ class AustralianTaxCalculator {
                 }
             });
         });
+
+        // Add event listeners for deduction inputs to update total in real-time
+        const deductionIds = [
+            'deductCars','deductTools','deductClothes','deductWFH','deductEducation','deductMemberships','deductMeals','deductPersonal','deductGifts','deductInvestments','deductTaxAffairs','deductOccupation'
+        ];
+        deductionIds.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', () => this.updateTotalDeductions());
+            }
+        });
+        // Initialize display
+        this.updateTotalDeductions();
     }
 
     calculateTax() {
         const formData = new FormData(this.form);
         const data = {
-            taxableIncome: parseFloat(formData.get('taxableIncome')) || 0
+            grossIncome: parseFloat(formData.get('taxableIncome')) || 0,
+            deductCars: parseFloat(formData.get('deductCars')) || 0,
+            deductTools: parseFloat(formData.get('deductTools')) || 0,
+            deductClothes: parseFloat(formData.get('deductClothes')) || 0,
+            deductWFH: parseFloat(formData.get('deductWFH')) || 0,
+            deductEducation: parseFloat(formData.get('deductEducation')) || 0,
+            deductMemberships: parseFloat(formData.get('deductMemberships')) || 0,
+            deductMeals: parseFloat(formData.get('deductMeals')) || 0,
+            deductPersonal: parseFloat(formData.get('deductPersonal')) || 0,
+            deductGifts: parseFloat(formData.get('deductGifts')) || 0,
+            deductInvestments: parseFloat(formData.get('deductInvestments')) || 0,
+            deductTaxAffairs: parseFloat(formData.get('deductTaxAffairs')) || 0,
+            deductOccupation: parseFloat(formData.get('deductOccupation')) || 0
         };
 
-        const incomeTax = this.calculateIncomeTax(data.taxableIncome);
+        const totalDeductions = data.deductCars + data.deductTools + data.deductClothes + data.deductWFH + data.deductEducation + data.deductMemberships + data.deductMeals + data.deductPersonal + data.deductGifts + data.deductInvestments + data.deductTaxAffairs + data.deductOccupation;
+        const taxableIncome = Math.max(0, data.grossIncome - totalDeductions);
+
+        const incomeTax = this.calculateIncomeTax(taxableIncome);
         const totalTax = incomeTax;
-        const takeHomePay = data.taxableIncome - totalTax;
-        const effectiveTaxRate = data.taxableIncome > 0 ? (totalTax / data.taxableIncome) * 100 : 0;
+        const takeHomePay = data.grossIncome - totalTax;
+        const effectiveTaxRate = data.grossIncome > 0 ? (totalTax / data.grossIncome) * 100 : 0;
 
         this.displayResults({
             ...data,
+            totalDeductions,
+            taxableIncome,
             incomeTax,
             totalTax,
             takeHomePay,
@@ -63,25 +93,26 @@ class AustralianTaxCalculator {
         return bracket.baseTax + taxOnExcess;
     }
 
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('en-AU', {
+            style: 'currency',
+            currency: 'AUD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    }
+
+    formatPercentage(percentage) {
+        return percentage.toFixed(1) + '%';
+    }
+
     displayResults(results) {
-        const formatCurrency = (amount) => {
-            return new Intl.NumberFormat('en-AU', {
-                style: 'currency',
-                currency: 'AUD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(amount);
-        };
 
-        const formatPercentage = (percentage) => {
-            return percentage.toFixed(1) + '%';
-        };
-
-        document.getElementById('taxableIncomeResult').textContent = formatCurrency(results.taxableIncome);
-        document.getElementById('incomeTaxResult').textContent = formatCurrency(results.incomeTax);
-        document.getElementById('totalTaxResult').textContent = formatCurrency(results.totalTax);
-        document.getElementById('takeHomeResult').textContent = formatCurrency(results.takeHomePay);
-        document.getElementById('effectiveTaxRateResult').textContent = formatPercentage(results.effectiveTaxRate);
+        document.getElementById('taxableIncomeResult').textContent = this.formatCurrency(results.taxableIncome);
+        document.getElementById('incomeTaxResult').textContent = this.formatCurrency(results.incomeTax);
+        document.getElementById('totalTaxResult').textContent = this.formatCurrency(results.totalTax);
+        document.getElementById('takeHomeResult').textContent = this.formatCurrency(results.takeHomePay);
+        document.getElementById('effectiveTaxRateResult').textContent = this.formatPercentage(results.effectiveTaxRate);
 
         this.resultsDiv.classList.remove('hidden');
         
@@ -91,6 +122,20 @@ class AustralianTaxCalculator {
         });
 
         this.resultsDiv.style.animation = 'fadeInUp 0.5s ease-out';
+    }
+
+    updateTotalDeductions() {
+        const ids = [
+            'deductCars','deductTools','deductClothes','deductWFH','deductEducation','deductMemberships','deductMeals','deductPersonal','deductGifts','deductInvestments','deductTaxAffairs','deductOccupation'
+        ];
+        let total = 0;
+        ids.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) total += parseFloat(input.value) || 0;
+        });
+        
+        const display = document.getElementById('totalDeductionsDisplay');
+        if (display) display.textContent = this.formatCurrency(total);
     }
 }
 
